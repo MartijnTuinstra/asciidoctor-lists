@@ -41,29 +41,32 @@ module AsciidoctorLists
          hide_empty_section = params[:hide_empty_section]
 
          elements = document.find_by(traverse_documents: true, context: params[:element].to_sym)
+
+         elements.delete_if do |element|
+           !element.caption && !element.title
+         end
+         
          if elements.length > 0
            elements.each do |element|
-
-             if element.caption or element.title
-               unless element.id
-                 element.id = SecureRandom.uuid
-                 document.catalog[:refs][element.id] = element
+             unless element.id
+               element.id = SecureRandom.uuid
+               document.catalog[:refs][element.id] = element
+             end
+  
+             if enhanced_rendering
+               if element.caption
+                 references_asciidoc << %(xref:#{element.id}[#{element.caption.rstrip()}] #{element.instance_variable_get(:@title)} +)
+               else
+                 references_asciidoc << %(xref:#{element.id}[#{element.instance_variable_get(:@title)}] +)
                end
-
-               if enhanced_rendering
-                   if element.caption
-                     references_asciidoc << %(xref:#{element.id}[#{element.caption.rstrip()}] #{element.instance_variable_get(:@title)} +)
-                   else
-                     references_asciidoc << %(xref:#{element.id}[#{element.instance_variable_get(:@title)}] +)
-                   end
-                 else
-                   if element.caption
-                    references_asciidoc << %(xref:#{element.id}[#{element.caption.rstrip()}] #{element.title} +)
-                   else
-                    references_asciidoc << %(xref:#{element.id}[#{element.title}] +)
-                 end
+             else
+               if element.caption
+                references_asciidoc << %(xref:#{element.id}[#{element.caption.rstrip()}] #{element.title} +)
+               else
+                references_asciidoc << %(xref:#{element.id}[#{element.title}] +)
                end
              end
+
            end
          elsif hide_empty_section
            block.parent.parent.blocks.delete block.parent
